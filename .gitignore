@@ -1,0 +1,27 @@
+# ignore everything at the top level, then allow only what we want
+/*
+!/.gitignore
+!/README.md
+!/lab1/
+!/lab2/
+!/lab3/
+!/lab4/
+!/lab5/
+!/logs/
+
+# safety net inside the allowed folders
+*.raw
+*.7z
+*.zip
+*.rar
+*.dmp
+*.dat
+*.kdbx
+*.vacb
+paint.data
+filescan*.txt
+mft.txt
+out/
+sweep_*/
+tiles_*/
+carved/
