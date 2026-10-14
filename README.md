@@ -35,7 +35,7 @@ I assumed one Volatility profile for every image which cost me too much time. Af
  
 **Stage 1.** I ran `cmdscan` and `consoles`. `cmdscan` only shows the typed command `St4G3$1`. `consoles` also shows the screen buffer, and under `C:\Users\SmartNet>St4G3$1` there is a line of Base64, `ZmxhZ3t0aDFzXzFzX3RoM18xc3Rfc3Q0ZzMhIX0=`, which I decoded with `base64 -d`.
  
-![Lab 1: cmdscan and consoles, Base64 line in the cmd.exe screen buffer](lab1/evidence/04_consoles_base64.png)
+![Lab 1: cmdscan and consoles, Base64 line in the cmd.exe screen buffer](lab1/evidence/04_consoles_base64.png)   
 *Lab 1: cmdscan and consoles, Base64 line in the cmd.exe screen buffer*
  
 ![Lab 1, stage 1 flag: Base64 decode](lab1/evidence/05_decode_flag1.png)   
