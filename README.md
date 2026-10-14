@@ -20,11 +20,13 @@ I assumed one Volatility profile for every image which cost me too much time. Af
  
 ---
  
+
 ## Lab 1: Beginner's Luck
  
 | Stage | Flag | Source |
 |-------|------|--------|
 | 1 | `flag{th1s_1s_th3_1st_st4g3!!}` | `consoles` output (Base64) |
+| 2 | `flag{Good_BOY_good_girl_}` | raw pixels in the `mspaint.exe` process memory |
 | 3 | `flag{w3ll_3rd_stage_was_easy}` | `flag3.png` inside `Important.rar` |
  
 **Getting a usable image.** The first archive would not open in the file manager. In the terminal `7z t` gave `Data Error` and the extracted file was 808000657 bytes instead of 1073676288. I did not realise that at first. `imageinfo` still worked, but `pslist` failed with `Could not list tasks`, and `psscan` was empty. I tried other profiles, `kdbgscan`, the KDBG address and a second Volatility build, and all failed the same way, so the file had to be the problem. The Downloads copy had MD5 `79aedde9dcb00ef34c93206ef21e7cc7`, but the Lab 1 README lists `919a0ded944c427b7f4e5c26a6790e8d`. After a new download the archive passed `7z t` and the image MD5 was `b9fec1a443907d870cb32b048bda9380`, the value in the README. `pslist` then worked.
@@ -36,24 +38,32 @@ I assumed one Volatility profile for every image which cost me too much time. Af
 ![Lab 1: cmdscan and consoles, Base64 line in the cmd.exe screen buffer](lab1/evidence/04_consoles_base64.png)
 *Lab 1: cmdscan and consoles, Base64 line in the cmd.exe screen buffer*
  
-![Lab 1, stage 1 flag: Base64 decode](lab1/evidence/05_decode_flag1.png)
+![Lab 1, stage 1 flag: Base64 decode](lab1/evidence/05_decode_flag1.png)   
 *Lab 1, stage 1 flag: Base64 decode*
  
 **Stage 3.** WinRAR was running, so I searched `filescan` for `rar` to find its archive and dumped it with `dumpfiles`. `Important.rar` is in `\Users\Alissa Simpson\Documents\` and appears three times (`0x3fa3ebc0`, `0x3fac3bc0`, `0x3fb48bc0`), which are separate file objects for the same file. The first one gave a valid RAR v5 file. `unrar` showed the comment "Password is NTLM hash(in uppercase) of Alissa's account passwd." `hashdump` gave Alissa Simpson's NTLM hash `f4ff64c8baac57d22f22edc681055ba6` (the fourth field). Administrator and Guest have the empty-password hash `31d6cfe0...`, so they are no use. In uppercase, `F4FF64C8BAAC57D22F22EDC681055BA6` extracted `flag3.png`.
  
-![Lab 1: Important.rar found with filescan, three file objects](lab1/evidence/06_filescan_important_rar.png)
+![Lab 1: Important.rar found with filescan, three file objects](lab1/evidence/06_filescan_important_rar.png)   
 *Lab 1: Important.rar found with filescan, three file objects*
  
-![Lab 1: dumpfiles, unrar with the archive comment, flag3.png extracted](lab1/evidence/08_dumpfiles_unrar_flag3.png)
+![Lab 1: dumpfiles, unrar with the archive comment, flag3.png extracted](lab1/evidence/08_dumpfiles_unrar_flag3.png)   
 *Lab 1: dumpfiles, unrar with the archive comment, flag3.png extracted*
  
-![Lab 1, stage 3 flag: flag3.png](lab1/evidence/09_flag3_png.png)
-
+![Lab 1, stage 3 flag: flag3.png](lab1/evidence/09_flag3_png.png)  
 *Lab 1, stage 3 flag: flag3.png*
  
-**Reasoning.** `consoles` worked because the console host (`conhost.exe`) keeps the whole screen buffer in memory. `cmdscan` only holds the typed input, and the Base64 string was output, which is why only `consoles` showed it. `filescan` finds file objects even for files that are not open, and `dumpfiles` rebuilds the file from pages cached in RAM, so I got the archive without disk access. `hashdump` reads the SAM and SYSTEM registry hives from memory and decrypts the stored hashes, so I had the NTLM hash without knowing the password.
+**Stage 2.** The lab says she was trying to draw something, which points to `mspaint.exe` (PID 2424). I dumped its memory with `memdump -p 2424`, which gives a 266 MB file, so an unsaved drawing could be inside it. A drawing is pixels and not text, and my first attempts failed. `strings` only found Windows text, a search for PNG signatures found nothing, and showing the dump as pixels at one width gave mostly noise. I searched for long runs of white bytes (an empty canvas) and found five large blocks, but checking for a row width around them showed no clear picture. Then I treated the dump the way GIMP's raw image import does, with width, height and contrast. I wrote a small script that reads the bytes as 4 bytes per pixel, flips the image vertically and stretches the contrast, and saved contact sheets at widths 800, 1024, 1280, 1366 and 1440. In one of them handwriting appeared. It is repeated several times because the width is not exact, and it reads `flag{Good_BOY_good_girl_}`.
+ 
+![Lab 1: white runs found in the mspaint memory dump](lab1/evidence/10_paint_findwhite.png)   
+*Lab 1: white runs found in the mspaint memory dump*
+ 
+![Lab 1, stage 2 flag: handwriting recovered from the raw pixels of mspaint.exe](lab1/evidence/11_paint_flag_stage2.png)   
+*Lab 1, stage 2 flag: handwriting recovered from the raw pixels of mspaint.exe*
+ 
+**Reasoning.** `consoles` worked because the console host (`conhost.exe`) keeps the whole screen buffer in memory. `cmdscan` only holds the typed input, and the Base64 string was output, which is why only `consoles` showed it. `filescan` finds file objects even for files that are not open, and `dumpfiles` rebuilds the file from pages cached in RAM, so I got the archive without disk access. `hashdump` reads the SAM and SYSTEM registry hives from memory and decrypts the stored hashes, so I had the NTLM hash without knowing the password. `memdump` copies the whole address space of a process, so a drawing that was never saved is still in it, as raw pixels at 4 bytes each. The picture only lines up when the width is right, and a wrong width shears it into noise, which is why I had to try several widths and stretch the contrast of the thin dark lines.
  
 ---
+ 
  
 ## Lab 2: A New World
  
